@@ -1,0 +1,8 @@
+{
+    "ANTHROPIC_API_KEY": "sk-ant-...",
+    "GMAIL_CREDENTIALS": "credentials.json",
+    "EMPFAENGER_MAIL":   "empfaenger@beispiel.de",
+    "ABSENDER_MAIL":     "deine@gmail.com",
+    "NOTIZ_BETREFF":     "Wochennotiz",
+    "SPEICHER_BASIS":    "C:\\Users\\DeinName\\Pfad\\zum\\Ordner\\2026"
+}

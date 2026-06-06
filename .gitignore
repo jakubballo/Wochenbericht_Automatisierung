@@ -1,0 +1,13 @@
+# Persönliche Konfiguration (niemals auf GitHub hochladen!)
+config.json
+credentials.json
+token.pickle
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# PDF Ausgaben
+*.pdf
