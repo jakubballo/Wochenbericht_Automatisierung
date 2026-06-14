@@ -2,7 +2,7 @@
 Wochenbericht Automatisierung
 ==============================
 1. Liest die Wochennotiz-Mail vom iPhone (Gmail)
-2. Filtert nur Einträge von Montag bis zum heutigen Samstag
+2. Filtert nur Einträge von Montag bis zum heutigen Sonntag
 3. Poliert Tätigkeiten mit Gemini KI auf
 4. Erstellt eine schöne PDF mit Gesamtstunden + Stunden pro Baustelle
 5. Speichert lokal + versendet per Gmail
@@ -79,7 +79,7 @@ def gmail_authentifizieren():
 
 
 def notiz_aus_mail_lesen(service):
-    """Sucht die Wochennotiz-Mail von diesem Samstag (heute)"""
+    """Sucht die Wochennotiz-Mail von diesem Sonntag (heute)"""
     heute = datetime.now()
     # Suche Mails der letzten 2 Tage mit dem Betreff
     ergebnis = service.users().messages().list(
@@ -190,12 +190,12 @@ def datum_normalisieren(datum_str, aktuelles_jahr=None):
 
 
 def woche_bestimmen():
-    """Gibt Montag und Samstag der aktuellen Woche zurück"""
+    """Gibt Montag und Sonntag der aktuellen Woche zurück"""
     heute = date.today()
     wochentag = heute.weekday()  # 0=Mo, 5=Sa, 6=So
     montag = heute - timedelta(days=wochentag)
-    samstag = montag + timedelta(days=5)
-    return montag, samstag
+    sonntag = montag + timedelta(days=6)
+    return montag, sonntag
 
 
 def mail_text_parsen(text):
@@ -210,7 +210,7 @@ def mail_text_parsen(text):
       8:00-12:00
       Tätigkeiten...
     """
-    montag, samstag = woche_bestimmen()
+    montag, sonntag = woche_bestimmen()
     aktuelles_jahr = date.today().year
 
     tage = []
@@ -231,7 +231,7 @@ def mail_text_parsen(text):
             baustelle  = datum_match.group(2).strip()
             datum_obj  = datum_normalisieren(datum_str, aktuelles_jahr)
 
-            if datum_obj and montag <= datum_obj <= samstag:
+            if datum_obj and montag <= datum_obj <= sonntag:
                 stunden_str   = ""
                 taetigkeiten  = []
                 i += 1
@@ -259,7 +259,7 @@ def mail_text_parsen(text):
                 tage.append({
                     "datum":         datum_obj,
                     "datum_str":     datum_obj.strftime('%d.%m.%Y'),
-                    "wochentag":     ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][datum_obj.weekday()],
+                    "wochentag":     ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"][datum_obj.weekday()],
                     "baustelle":     baustelle,
                     "stunden_roh":   stunden_str,
                     "stunden":       stunden,
@@ -269,7 +269,7 @@ def mail_text_parsen(text):
         i += 1
 
     print(f"✅ {len(tage)} Tage in der Woche gefunden")
-    return tage, montag, samstag
+    return tage, montag, sonntag
 
 
 # ══════════════════════════════════════════════
@@ -371,7 +371,7 @@ def stunden_formatieren(h):
 #  PDF
 # ══════════════════════════════════════════════
 
-def pdf_erstellen(tage, montag, samstag, ausgabe_pfad):
+def pdf_erstellen(tage, montag, sonntag, ausgabe_pfad):
     """Erstellt die professionelle Wochenbericht-PDF"""
 
     gesamt_stunden, pro_baustelle = statistiken_berechnen(tage)
@@ -429,7 +429,7 @@ def pdf_erstellen(tage, montag, samstag, ausgabe_pfad):
     kw = montag.strftime('%V')
     inhalt.append(Paragraph("Wochenbericht", st_titel))
     inhalt.append(Paragraph(
-        f"KW {kw}  ·  {montag.strftime('%d.%m.%Y')} – {samstag.strftime('%d.%m.%Y')}",
+        f"KW {kw}  ·  {montag.strftime('%d.%m.%Y')} – {sonntag.strftime('%d.%m.%Y')}",
         st_untertitel))
     inhalt.append(Spacer(1, 0.3*cm))
     inhalt.append(HRFlowable(width="100%", thickness=2, color=akzent))
@@ -524,9 +524,9 @@ def pdf_erstellen(tage, montag, samstag, ausgabe_pfad):
 #  GMAIL SENDEN
 # ══════════════════════════════════════════════
 
-def pdf_per_gmail_senden(service, pdf_pfad, montag, samstag):
+def pdf_per_gmail_senden(service, pdf_pfad, montag, sonntag):
     kw = montag.strftime('%V')
-    betreff = f"Wochenbericht KW {kw} · {montag.strftime('%d.%m.')} – {samstag.strftime('%d.%m.%Y')}"
+    betreff = f"Wochenbericht KW {kw} · {montag.strftime('%d.%m.')} – {sonntag.strftime('%d.%m.%Y')}"
 
     nachricht = MIMEMultipart()
     nachricht['To']      = EMPFAENGER_MAIL
@@ -577,8 +577,8 @@ def main():
     if not rohtext:
         return
 
-    print("\n📅 Mail parsen (Montag–Samstag dieser Woche)...")
-    tage, montag, samstag = mail_text_parsen(rohtext)
+    print("\n📅 Mail parsen (Montag–Sonntag dieser Woche)...")
+    tage, montag, sonntag = mail_text_parsen(rohtext)
 
     if not tage:
         print("❌ Keine Einträge für diese Woche gefunden!")
@@ -590,13 +590,13 @@ def main():
 
     print("\n📄 PDF wird erstellt...")
     von_str = montag.strftime('%d.%m.%Y')
-    bis_str = samstag.strftime('%d.%m.%Y')
+    bis_str = sonntag.strftime('%d.%m.%Y')
     dateiname = f"Wochenbericht {von_str} - {bis_str}.pdf"
     pdf_pfad = os.path.join(SPEICHER_ORDNER, dateiname)
-    pdf_erstellen(tage, montag, samstag, pdf_pfad)
+    pdf_erstellen(tage, montag, sonntag, pdf_pfad)
 
     print("\n✉️  Mail wird versendet...")
-    pdf_per_gmail_senden(service, pdf_pfad, montag, samstag)
+    pdf_per_gmail_senden(service, pdf_pfad, montag, sonntag)
 
     gesamt, pro_baustelle = statistiken_berechnen(tage)
     print(f"\n📊 Zusammenfassung:")
